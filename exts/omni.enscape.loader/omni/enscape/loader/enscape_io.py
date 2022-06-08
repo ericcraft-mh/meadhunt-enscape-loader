@@ -14,7 +14,7 @@ class EnscapeIO(omni.ext.IExt):
 
     # Class Variables
     EXTENSION_NAME = "Omni.Enscape IO"
-    DEBUG = False
+    DEBUG = True
     WINDOW_TITLE = "Enscape Camera IO"
 
     def __init__(self):
