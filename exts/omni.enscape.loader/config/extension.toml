@@ -10,7 +10,7 @@ description="Importer/exporter to exchange Enscape camera data through animation
 readme  = "docs/README.md"
 
 # URL of the extension source repository.
-repository = ""
+repository = "https://github.com/ericcraft-mh/omni-enscape-loader"
 
 # One of categories for UI.
 category = "Other"
