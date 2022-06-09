@@ -1,5 +1,8 @@
 import xml.etree.ElementTree as ET
+import omni.kit
 import omni.kit.commands
+import omni.usd
+import asyncio
 ## Sample Structure:
 # <?xml version="1.0" ?>
 # <VideoPath version="1" easingInOut="1" shakyCam="0">
@@ -56,14 +59,35 @@ class xml_data:
     def keys_count(self):
         return int(self._root[0].attrib.get("count"))
 
-    def create_cam(self):
-        omni.kit.commands.execute('CreatePrimWithDefaultXform', prim_type='Camera', attributes={'focusDistance': 400, 'focalLength': 24})
+    def get_value(self, order:0, item:0, axis:str):
+        return float(self._root[0][order][item].attrib.get(axis))
+
+    # def create_cam(self):
+
 
     def parse_xml(self):
+        async def create_then_select_camera():
+            '''
+            we need to create an async function if we need to await anywhere
+            '''
+
+            result, prim_path = omni.kit.commands.execute('CreatePrimWithDefaultXform', prim_type='Camera', attributes={'focusDistance': 400, 'focalLength': 24})
+            print (f"Prim Path: {prim_path}")
+
+            # If you remove this, there's no guarantee that the mesh will be created before the next line is
+            # executed
+            await omni.kit.app.get_app().next_update_async()
+            
+            selection = omni.usd.get_context().get_selection()
+            selection.clear_selected_prim_paths()
+            selection.set_selected_prim_paths([prim_path], False)
+            print (f"selected prim paths are {selection.get_selected_prim_paths()}")
         self._keys_total = self.keys_count()
         self._is_valid = self.valid_xml()
         self._duration = self.length_xml()
         self._time_per_key = self.time_key()
+        asyncio.ensure_future(create_then_select_camera())
+        print(f"{self.get_value(0,0,'x')}, {self.get_value(0,1,'z')}")
         if self._debug:
             print(f"\n\n >>> Valid: {self._is_valid}\n >>> Keys Count: {self._keys_total}\n >>> Length: {self._duration}\n >>> TimePerKey: {self._time_per_key}\n")
         if self._is_valid:
