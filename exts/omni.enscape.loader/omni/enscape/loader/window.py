@@ -52,6 +52,11 @@ class ExtensionWindow(ui.Window):
                     ui.Spacer(height=0)
                     self._create_path("XML Path:", "")
                     ui.Spacer(height=0)
+                    with ui.HStack():
+                        ui.Label("Scene Path:", name="label", width=self.LABEL_WIDTH)
+                        self._scene_path = ui.StringField(name="scenepath", height=self.BUTTON_SIZE).model
+                        self._scene_path.set_value("/World/Cameras")
+                    ui.Spacer(height=0)
                     self.COMBO_MODE = self._create_combo("Mode:", self.MODE_LIST, 0)
                     self.COMBO_MODE.enabled = False
                     ui.Spacer(height=0)
@@ -93,7 +98,7 @@ class ExtensionWindow(ui.Window):
     def _on_click(self):
         selected_item = self.COMBO_METHOD.model.get_item_value_model().as_int
         if self._valid_xml:
-            xml_data(self.DEBUG, self._file_return, selected_item).parse_xml()
+            xml_data(self.DEBUG, self._file_return, selected_item, self._scene_path).parse_xml()
         else:
             print("Please select a valid Enscape XML File!")
         if self.DEBUG:
