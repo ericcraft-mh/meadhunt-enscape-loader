@@ -10,7 +10,7 @@ description="Importer/exporter to exchange Enscape camera data through animation
 readme  = "docs/README.md"
 
 # URL of the extension source repository.
-repository = "https://github.com/ericcraft-mh/omni-enscape-loader"
+repository = "https://github.com/ericcraft-mh/meadhunt-enscape-loader"
 
 # One of categories for UI.
 category = "Other"
@@ -24,4 +24,4 @@ keywords = ["kit", "enscape"]
 
 # Main python module this extension provides, it will be publicly available as "import omni.hello.world".
 [[python.module]]
-name = "omni.enscape.loader"
+name = "meadhunt.enscape.loader"

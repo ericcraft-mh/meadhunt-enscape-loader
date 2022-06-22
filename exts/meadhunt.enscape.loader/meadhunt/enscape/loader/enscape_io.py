@@ -13,7 +13,7 @@ class EnscapeIO(omni.ext.IExt):
     # this extension is located on filesystem.
 
     # Class Variables
-    EXTENSION_NAME = "Omni.Enscape IO"
+    EXTENSION_NAME = "Mead & Hunt Enscape IO"
     DEBUG = True
     WINDOW_TITLE = "Enscape Camera IO"
 
@@ -21,7 +21,7 @@ class EnscapeIO(omni.ext.IExt):
         pass
 
     def on_startup(self, ext_id):
-        print("[omni.enscape.loader] Enscape Camera IO startup")
+        print("[meadhunt.enscape.loader] Enscape Camera IO startup")
 
         # Note the "Window" part of the path that directs the new menu item to the "Window" menu.
         self._menu_path = f"Window/{self.WINDOW_TITLE}"
@@ -35,7 +35,7 @@ class EnscapeIO(omni.ext.IExt):
         omni.kit.ui.get_editor_menu().set_value(self._menu_path, True)
 
     def on_shutdown(self):
-        print("[omni.enscape.loader] Enscape Camera IO shutdown")
+        print("[meadhunt.enscape.loader] Enscape Camera IO shutdown")
 
         if self._window:
             self._window.hide()
