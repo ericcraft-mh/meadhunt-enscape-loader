@@ -49,9 +49,9 @@ class ExtensionWindow(ui.Window):
         with self.frame:
             with ui.VStack(height=0):
                 with ui.VStack(spacing=5, name="frame_v_stack"):
-                    ui.Spacer(height=0)
+                    # ui.Spacer(height=0)
                     self._create_path("XML Path:", "")
-                    ui.Spacer(height=0)
+                    # ui.Spacer(height=0)
                     with ui.HStack():
                         ui.Label("Scene Path:", name="scenelabel", width=self.LABEL_WIDTH)
                         self._scene_path = ui.StringField(name="scenepath", height=self.BUTTON_SIZE).model
@@ -60,15 +60,20 @@ class ExtensionWindow(ui.Window):
                         ui.Label("Name:", name="namelabel", width=self.LABEL_WIDTH)
                         self._camera_name = ui.StringField(name="namefield", height=self.BUTTON_SIZE).model
                         self._camera_name.set_value("EnscapeCamera")
-                    ui.Spacer(height=0)
+                    # ui.Spacer(height=0)
                     self.COMBO_MODE = self._create_combo("Mode:", self.MODE_LIST, 0)
                     self.COMBO_MODE.enabled = False
-                    ui.Spacer(height=0)
+                    # ui.Spacer(height=0)
                     self.COMBO_METHOD = self._create_combo("Method:", self.METHOD_LIST, 3)
-                    self.COMBO_METHOD.enabled = False
-                    ui.Spacer(height=0)
+                    self.COMBO_METHOD.enabled = True
+                    # ui.Spacer(height=0)
                 self.btn_click = ui.Button("Click Me", name="BtnClick", clicked_fn=lambda: self._on_click(), style={"color": cl.shade("aqua", transparent=0x20FFFFFF, white=0xFFFFFFFF)}, enabled=False)
                 ui.set_shade("transparent")
+                # ui.Spacer(height=2)
+                # with ui.CollapsableFrame(title="About", collapsed=True, alignment=ui.Alignment.CENTER):
+                #     with ui.VStack():
+                #         ui.Label("Author: Eric Craft")
+                #         ui.Label("Company: Mead & Hunt")
 
     def _on_filter_xml(self, item) -> bool:
         """Callback to filter the choices of file names in the open or save dialog"""

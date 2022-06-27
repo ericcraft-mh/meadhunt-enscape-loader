@@ -13,7 +13,6 @@ class EnscapeIO(omni.ext.IExt):
     # this extension is located on filesystem.
 
     # Class Variables
-    EXTENSION_NAME = "Mead & Hunt Enscape IO"
     DEBUG = True
     WINDOW_TITLE = "Enscape Camera IO"
 
@@ -54,10 +53,10 @@ class EnscapeIO(omni.ext.IExt):
         else:
             if self._window:
                 self._window.hide()
+                self._window.destroy()
 
     def destroy(self):
         if self._window:
             self._window.hide()
-            self._window.destroy()
             self._window = None
 

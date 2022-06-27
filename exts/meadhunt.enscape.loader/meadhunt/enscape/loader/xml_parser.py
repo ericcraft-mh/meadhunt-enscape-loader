@@ -1,11 +1,13 @@
 import xml.etree.ElementTree as ET
-from numpy import complex128
+from numpy import arctan2, complex128, deg2rad
+import numpy
 import omni.kit
 import omni.kit.commands
+from omni.kit.menu.utils import scripts
 import omni.usd
 from pxr import Gf, UsdGeom
 import math
-
+import omni.anim.curve.scripts as anim
 ## Sample Structure:
 # <?xml version="1.0" ?>
 # <VideoPath version="1" easingInOut="1" shakyCam="0">
@@ -90,7 +92,7 @@ class xml_data:
         theDir = Gf.Vec3d(-(self.get_value(index,1,'x')),(self.get_value(index,1,'z')),-(self.get_value(index,1,'y')))
         return theDir
 
-    def get_xform(self, index=0):
+    def _xform(self, index=0):
         # Input vectors
         vecpos = self.get_pos(index)
         vecdir = self.get_dir(index)
@@ -119,7 +121,27 @@ class xml_data:
         xformmat.SetColumn(3, column3)
         return xformmat
 
-    def get_focalLength(self, cam=None, fov=math.radians(90.0)):
+    def _quat2euler(self, q:Gf.Quatd):
+        qw = q.GetReal()
+        qx = q.GetImaginary()[0]
+        qy = q.GetImaginary()[1]
+        qz = q.GetImaginary()[2]
+
+        sinr_cosp = 2*(qw*qx+qy*qz)
+        cosr_cosp = 1-2*(qx*qx+qy*qy)
+        xaxis = arctan2(sinr_cosp,cosr_cosp)
+        sinp = 2*(qw*qy-qz*qx)
+        if Gf.Abs(sinp) >= 1:
+            yaxis = math.copysign(math.pi/2,sinp)
+        else:
+            yaxis = math.asin(sinp)
+        siny_cosp = 2*(qw*qz+qx*qy)
+        cosy_cosp = 1-2*(qy*qy+qz*qz)
+        zaxis = math.atan2(siny_cosp,cosy_cosp)
+        euler = Gf.Vec3d(Gf.RadiansToDegrees(xaxis),Gf.RadiansToDegrees(yaxis),Gf.RadiansToDegrees(zaxis))
+        return euler
+
+    def _focalLength(self, cam=None, fov=math.radians(90.0)):
         if cam != None:
             focalLength = (cam.GetAttribute("horizontalAperture").Get()/2)/math.tan(fov/2)
             return focalLength
@@ -134,16 +156,24 @@ class xml_data:
         camera_prim.GetAttribute("horizontalAperture").Set(23.760)
         camera_prim.GetAttribute("verticalAperture").Set(13.365)
         # Set focalLength from XML or set to 90 degrees
-        camera_prim.GetAttribute("focalLength").Set(self.get_focalLength(camera_prim,self._fov))
+        camera_prim.GetAttribute("focalLength").Set(self._focalLength(camera_prim,self._fov))
         # Check if xformOp:transform exists
         # Set or create xformOp:transform
-        if camera_prim.HasAttribute("xformOp:transform"):
-            transform = camera_prim.GetAttribute("xformOp:transform")
+        if camera_prim.HasAttribute("xformOp:translate"):
+            None
         else:
             xform = UsdGeom.Xformable(camera_prim)
-            transform = xform.AddTransformOp()
+            # transform = xform.AddTransformOp()
+            xposition = xform.AddTranslateOp()            
+            xrotation = xform.AddRotateXYZOp()
+            xscale = xform.AddScaleOp()
         # Set the Camera transform matrix
-        transform.Set(self.get_xform(index))
+
+        xposition.Set(self._xform(index).ExtractTranslation())
+        xrotation.Set(self._quat2euler(self._xform(index).ExtractRotationQuat()))
+        xscale.Set(Gf.Vec3d(1,1,1))
+
+        # transform.Set(self.get_xform(index))
         # Debug
         if self._debug:
             print(f"Camera Path: {camera_path}")
@@ -160,7 +190,12 @@ class xml_data:
             if self._mode == 1:
                 print(f"Mode {self._mode}: WIP try again later")
             if self._mode == 2:
-                print(f"Mode {self._mode}: WIP try again later")
+                print(f"Mode {self._mode}: Ready for Testing")
+                for index in range(0, self._keys_total):
+                    newcam =self.create_cameras(index)
+                    newcam.GetAttribute("focalLength").Set(self.get_focalLength(camerasList[index],math.radians(90.0)))
+                    if newcam.HasAttribute("xformOp:translate"):
+                        anim.AddAnimCurves(paths=[f"{newcam}.xformOp:translate"],)
             if self._mode == 3:
                 print(f"Mode {self._mode}: Ready for Testing")
                 camerasList = []
