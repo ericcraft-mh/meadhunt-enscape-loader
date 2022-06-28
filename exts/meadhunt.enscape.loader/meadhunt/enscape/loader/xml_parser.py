@@ -7,7 +7,7 @@ from omni.kit.menu.utils import scripts
 import omni.usd
 from pxr import Gf, UsdGeom
 import math
-import omni.anim.curve.scripts as anim
+from pxr.Usd import TimeCode
 ## Sample Structure:
 # <?xml version="1.0" ?>
 # <VideoPath version="1" easingInOut="1" shakyCam="0">
@@ -84,6 +84,14 @@ class xml_data:
             outval = float(0)
         return outval
 
+    def get_keyTime(self, index=0):
+        theKey = self._root[0][index].attrib.get("timestampSeconds")
+        if theKey == None:
+            theKey = self.time_key()*index       
+        theTime = float(theKey)
+        theTime = Gf.Roundf(theTime)
+        return theTime
+
     def get_pos(self, index=0):
         thePos = 100*Gf.Vec3d(self.get_value(index,0,'x'),-self.get_value(index,0,'z'),self.get_value(index,0,'y'))
         return thePos
@@ -92,9 +100,13 @@ class xml_data:
         theDir = Gf.Vec3d(-(self.get_value(index,1,'x')),(self.get_value(index,1,'z')),-(self.get_value(index,1,'y')))
         return theDir
 
+    def get_rot(self, index=0):
+        theRot = self._quat2euler(self._xform(index))
+        return theRot
+
     def _xform(self, index=0):
         # Input vectors
-        vecpos = self.get_pos(index)
+        vecpos = Gf.Vec3d(0,0,0)
         vecdir = self.get_dir(index)
         vecup = Gf.Vec3d(0,0,1)
         # Generate normalized rotation vector from direction vector
@@ -121,7 +133,8 @@ class xml_data:
         xformmat.SetColumn(3, column3)
         return xformmat
 
-    def _quat2euler(self, q:Gf.Quatd):
+    def _quat2euler(self, xform:Gf.Matrix4d):
+        q = xform.ExtractRotationQuat()
         qw = q.GetReal()
         qx = q.GetImaginary()[0]
         qy = q.GetImaginary()[1]
@@ -159,18 +172,23 @@ class xml_data:
         camera_prim.GetAttribute("focalLength").Set(self._focalLength(camera_prim,self._fov))
         # Check if xformOp:transform exists
         # Set or create xformOp:transform
-        if camera_prim.HasAttribute("xformOp:translate"):
-            None
-        else:
-            xform = UsdGeom.Xformable(camera_prim)
-            # transform = xform.AddTransformOp()
-            xposition = xform.AddTranslateOp()            
-            xrotation = xform.AddRotateXYZOp()
-            xscale = xform.AddScaleOp()
+        # if camera_prim.HasAttribute("xformOp:translate"):
+        #     None
+        # else:
+        #     xform = UsdGeom.Xformable(camera_prim)
+        #     # transform = xform.AddTransformOp()
+        #     xposition = xform.AddTranslateOp()            
+        #     xrotation = xform.AddRotateXYZOp()
+        #     xscale = xform.AddScaleOp()
         # Set the Camera transform matrix
+        xform = UsdGeom.Xformable(camera_prim)
+        # transform = xform.AddTransformOp()
+        xposition = xform.AddTranslateOp()            
+        xrotation = xform.AddRotateXYZOp()
+        xscale = xform.AddScaleOp()
 
-        xposition.Set(self._xform(index).ExtractTranslation())
-        xrotation.Set(self._quat2euler(self._xform(index).ExtractRotationQuat()))
+        xposition.Set(self.get_pos())
+        xrotation.Set(self.get_rot())
         xscale.Set(Gf.Vec3d(1,1,1))
 
         # transform.Set(self.get_xform(index))
@@ -191,11 +209,19 @@ class xml_data:
                 print(f"Mode {self._mode}: WIP try again later")
             if self._mode == 2:
                 print(f"Mode {self._mode}: Ready for Testing")
-                for index in range(0, self._keys_total):
-                    newcam =self.create_cameras(index)
-                    newcam.GetAttribute("focalLength").Set(self.get_focalLength(camerasList[index],math.radians(90.0)))
+                for index in range(0, self._keys_total-1):
+                    newcam = self.create_cameras(index)
+                    newcampath = newcam.GetPrimPath()
+                    newcam.GetAttribute("focalLength").Set(self._focalLength(newcam,math.radians(90.0)))
                     if newcam.HasAttribute("xformOp:translate"):
-                        anim.AddAnimCurves(paths=[f"{newcam}.xformOp:translate"],)
+                        tpath = [f"{newcampath}.xformOp:translate"]
+                        rpath = [f"{newcampath}.xformOp:rotateXYZ"]
+                        # Set Anim Curve Keys for translate
+                        omni.kit.commands.execute("SetAnimCurveKey",paths=tpath,time=TimeCode(self.get_keyTime(index)),value=self.get_pos(index))
+                        omni.kit.commands.execute("SetAnimCurveKey",paths=tpath,time=TimeCode(self.get_keyTime(index+1)),value=self.get_pos(index+1))                        
+                        # Set Anim Curve Keys for rotateXYZ
+                        omni.kit.commands.execute("SetAnimCurveKey",paths=rpath,time=TimeCode(self.get_keyTime(index)),value=self.get_rot())
+                        omni.kit.commands.execute("SetAnimCurveKey",paths=rpath,time=TimeCode(self.get_keyTime(index+1)),value=self.get_rot())
             if self._mode == 3:
                 print(f"Mode {self._mode}: Ready for Testing")
                 camerasList = []
