@@ -1,6 +1,6 @@
 [package]
 # Semantic Versionning is used: https://semver.org/
-version = "1.0.0"
+version = "0.0.1"
 
 # The title and description fields are primarily for displaying extension info in UI
 title = "Mead & Hunt Enscape Camera IO"
@@ -21,6 +21,8 @@ keywords = ["kit", "enscape"]
 # Use omni.ui to build simple UI
 [dependencies]
 "omni.kit.uiapp" = {}
+"omni.anim.curve" = {}
+"omni.anim.curve_editor" = {}
 
 # Main python module this extension provides, it will be publicly available as "import omni.hello.world".
 [[python.module]]

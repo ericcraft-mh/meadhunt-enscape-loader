@@ -1,3 +1,4 @@
+from ctypes import alignment
 import omni.kit.ui
 import omni.ui as ui
 import os
@@ -15,6 +16,7 @@ class ExtensionWindow(ui.Window):
     BUTTON_SIZE = 24
     MODE_LIST = ["Import", "Export"]
     METHOD_LIST = ["Continous: Smooth","Continuous: Linear","Multiple: Linear","Multiple: Static"]
+    FIT_LIST = ["Match XML","Grow to Fit","Shrink to Fit"]
     COMBO_MODE = None    
     COMBO_METHOD = None
 
@@ -32,11 +34,15 @@ class ExtensionWindow(ui.Window):
         if self._open_file_dialog:
             self._open_file_dialog.destroy()
             self._open_file_dialog = None
+        if self:
+            self.destroy()
+            self = None
 
     def destroy(self):
         if self._open_file_dialog:
-            self._open_file_dialog.destroy()
             self._open_file_dialog = None
+        if self:
+            self = None
 
     def show(self):
         self.visible = True
@@ -67,6 +73,8 @@ class ExtensionWindow(ui.Window):
                     self.COMBO_METHOD = self._create_combo("Method:", self.METHOD_LIST, 3)
                     self.COMBO_METHOD.enabled = True
                     # ui.Spacer(height=0)
+                    self.COMBO_FIT = self._create_combo("Timeline:", self.FIT_LIST, 0)
+                    self.COMBO_FIT.enabled = True
                 self.btn_click = ui.Button("Click Me", name="BtnClick", clicked_fn=lambda: self._on_click(), style={"color": cl.shade("aqua", transparent=0x20FFFFFF, white=0xFFFFFFFF)}, enabled=False)
                 ui.set_shade("transparent")
                 # ui.Spacer(height=2)
@@ -105,13 +113,15 @@ class ExtensionWindow(ui.Window):
         return combo
  
     def _on_click(self):
-        selected_item = self.COMBO_METHOD.model.get_item_value_model().as_int
+        mode_item = self.COMBO_MODE.model.get_item_value_model().as_int
+        method_item = self.COMBO_METHOD.model.get_item_value_model().as_int
+        fit_item = self.COMBO_FIT.model.get_item_value_model().as_int
         if self._valid_xml:
-            xml_data(self.DEBUG, self._file_return, selected_item, self._scene_path.get_value_as_string(), self._camera_name.get_value_as_string()).parse_xml()
+            xml_data(self.DEBUG, self._file_return, [mode_item,method_item,fit_item], self._scene_path.get_value_as_string(), self._camera_name.get_value_as_string()).parse_xml()
         else:
             print("Please select a valid Enscape XML File!")
         if self.DEBUG:
-            print(f"Selected Item: {selected_item} | {self.METHOD_LIST[selected_item]}")
+            print(f"Selected Item: {method_item} | {self.METHOD_LIST[method_item]}")
     
     def _fix_path(self, str):
         txt = re.split(r'[/\\]',str)

@@ -1,13 +1,19 @@
 import xml.etree.ElementTree as ET
-from numpy import arctan2, complex128, deg2rad
+
+from numpy import arctan2
 import numpy
+import math
+import asyncio
+
 import omni.kit
 import omni.kit.commands
-from omni.kit.menu.utils import scripts
+import omni.kit.app
 import omni.usd
+import omni.timeline
+
 from pxr import Gf, UsdGeom
-import math
 from pxr.Usd import TimeCode
+
 ## Sample Structure:
 # <?xml version="1.0" ?>
 # <VideoPath version="1" easingInOut="1" shakyCam="0">
@@ -36,10 +42,12 @@ from pxr.Usd import TimeCode
 # Seconds per Key: float(root[0][int(root[0].attrib.get("count"))-1].attrib.get("timestampSeconds"))/int(root[0].attrib.get("count"))
 
 class xml_data:
-    def __init__(self, debug=False, xml=None, mode=0, scenepath="/World", cameraname="EnscapeCamera"):
+    def __init__(self, debug=False, xml=None, items=[0,0,0], scenepath="/World", cameraname="EnscapeCamera"):
         self._debug = debug
         self._xml = xml
-        self._mode = mode
+        self._mode = items[0]
+        self._method = items[1]
+        self._fit = items[2]
         self._scenepath = scenepath
         self._cameraname = cameraname
         tree = ET.parse(self._xml)
@@ -57,7 +65,7 @@ class xml_data:
                 print(f"{self._xml}: is NOT an Enscape XML")
             return False
 
-    def length_xml(self):
+    def total_time(self):
         try:
             outval = float(self._root[0][self.keys_count()-1].attrib.get("timestampSeconds"))
         except:
@@ -65,7 +73,7 @@ class xml_data:
         return outval
 
     def time_key(self):
-        return self.length_xml()/self.keys_count()
+        return self.total_time()/self.keys_count()
     
     def keys_count(self):
         return int(self._root[0].attrib.get("count"))
@@ -89,7 +97,7 @@ class xml_data:
         if theKey == None:
             theKey = self.time_key()*index       
         theTime = float(theKey)
-        theTime = Gf.Roundf(theTime)
+        theTime = round(theTime)
         return theTime
 
     def get_pos(self, index=0):
@@ -102,6 +110,14 @@ class xml_data:
 
     def get_rot(self, index=0):
         theRot = self._quat2euler(self._xform(index))
+        return theRot
+
+    def _closestRot(self, index=0):
+        theRot = self.get_rot(index)
+        nextRot = self.get_rot(index+1)
+        vec360 = Gf.Vec3d(0,0,360)
+        if numpy.linalg.norm(theRot-nextRot) > numpy.linalg.norm((theRot+vec360)-nextRot):
+            theRot += vec360
         return theRot
 
     def _xform(self, index=0):
@@ -165,32 +181,32 @@ class xml_data:
         # Create Camera Path
         camera_path = f"{self._scenepath}"+"/"+f"{self._cameraname}{index:0{len(str(self.keys_count()))}d}"
         # Create Camera prim
-        camera_prim = stage.DefinePrim(camera_path, "Camera")
+        camera_prim = stage.DefinePrim(camera_path, "Camera")    
         camera_prim.GetAttribute("horizontalAperture").Set(23.760)
         camera_prim.GetAttribute("verticalAperture").Set(13.365)
         # Set focalLength from XML or set to 90 degrees
         camera_prim.GetAttribute("focalLength").Set(self._focalLength(camera_prim,self._fov))
         # Check if xformOp:transform exists
         # Set or create xformOp:transform
-        # if camera_prim.HasAttribute("xformOp:translate"):
-        #     None
-        # else:
-        #     xform = UsdGeom.Xformable(camera_prim)
-        #     # transform = xform.AddTransformOp()
-        #     xposition = xform.AddTranslateOp()            
-        #     xrotation = xform.AddRotateXYZOp()
-        #     xscale = xform.AddScaleOp()
+        if camera_prim.HasAttribute("xformOp:translate"):
+            xposition = camera_prim.GetAttribute("xformOp:translate")
+            xrotation = camera_prim.GetAttribute("xformOp:rotateXYZ")
+            xscale = camera_prim.GetAttribute("xformOp:scale")
+        else:
+            xform = UsdGeom.Xformable(camera_prim)
+            # transform = xform.AddTransformOp()
+            xposition = xform.AddTranslateOp()
+            xrotation = xform.AddRotateXYZOp()
+            xscale = xform.AddScaleOp()
         # Set the Camera transform matrix
         xform = UsdGeom.Xformable(camera_prim)
         # transform = xform.AddTransformOp()
-        xposition = xform.AddTranslateOp()            
-        xrotation = xform.AddRotateXYZOp()
-        xscale = xform.AddScaleOp()
-
+        # xposition = xform.AddTranslateOp()            
+        # xrotation = xform.AddRotateXYZOp()
+        # xscale = xform.AddScaleOp()
         xposition.Set(self.get_pos())
         xrotation.Set(self.get_rot())
         xscale.Set(Gf.Vec3d(1,1,1))
-
         # transform.Set(self.get_xform(index))
         # Debug
         if self._debug:
@@ -200,30 +216,51 @@ class xml_data:
     def parse_xml(self):
         self._is_valid = self.valid_xml()
         self._keys_total = self.keys_count()
+        if self._fit == 0:
+            timeinterface = omni.timeline.get_timeline_interface()
+            timefps = timeinterface.get_time_codes_per_seconds()
+            totaltime = round(self.total_time()*timefps)
+            totaltime /= timefps
+            timeinterface.set_end_time(totaltime)
         if self._debug:
-            print(f"\n\n >>> Valid: {self._is_valid}\n >>> Keys Count: {self._keys_total}\n >>> Length: {self.length_xml()}\n >>> TimePerKey: {self.time_key()}\n")
+            print(f"\n\n >>> Valid: {self._is_valid}\n >>> Keys Count: {self._keys_total}\n >>> Length: {self.total_time()}\n >>> TimePerKey: {self.time_key()}\n")
         if self._is_valid:
-            if self._mode == 0:
-                print(f"Mode {self._mode}: WIP try again later")
-            if self._mode == 1:
-                print(f"Mode {self._mode}: WIP try again later")
-            if self._mode == 2:
-                print(f"Mode {self._mode}: Ready for Testing")
+            stage = omni.usd.get_context().get_stage()
+            if UsdGeom.GetStageUpAxis(stage) != 'Z':
+                UsdGeom.SetStageUpAxis(stage, 'Z')
+            if self._method == 0:
+                print(f"Method {self._method}: WIP try again later")
+            if self._method == 1:
+                print(f"Method {self._method}: Ready for Testing")
+                newcam = self.create_cameras()
+                newcampath = newcam.GetPrimPath()
+                newcam.GetAttribute("focalLength").Set(self._focalLength(newcam,math.radians(90.0)))
+                if newcam.HasAttribute("xformOp:translate"):
+                    tpath = f"{newcampath}.xformOp:translate"
+                    rpath = f"{newcampath}.xformOp:rotateXYZ"
+                    # omni.kit.commands.execute("AddAnimCurves",paths=[tpath,rpath])
+                    for index in range(0, self._keys_total):
+                        # Set Anim Curve Keys for translate
+                        omni.kit.commands.execute("SetAnimCurveKey",paths=[tpath],time=TimeCode(self.get_keyTime(index)*timefps),value=self.get_pos(index),inTangentType="Linear",outTangentType="Linear")
+                        # Set Anim Curve Keys for rotateXYZ
+                        omni.kit.commands.execute("SetAnimCurveKey",paths=[rpath],time=TimeCode(self.get_keyTime(index)*timefps),value=self._closestRot(index),inTangentType="Linear",outTangentType="Linear")
+            if self._method == 2:
+                print(f"Method {self._method}: Ready for Testing")
                 for index in range(0, self._keys_total-1):
                     newcam = self.create_cameras(index)
                     newcampath = newcam.GetPrimPath()
                     newcam.GetAttribute("focalLength").Set(self._focalLength(newcam,math.radians(90.0)))
                     if newcam.HasAttribute("xformOp:translate"):
-                        tpath = [f"{newcampath}.xformOp:translate"]
-                        rpath = [f"{newcampath}.xformOp:rotateXYZ"]
+                        tpath = f"{newcampath}.xformOp:translate"
+                        rpath = f"{newcampath}.xformOp:rotateXYZ"
                         # Set Anim Curve Keys for translate
-                        omni.kit.commands.execute("SetAnimCurveKey",paths=tpath,time=TimeCode(self.get_keyTime(index)),value=self.get_pos(index))
-                        omni.kit.commands.execute("SetAnimCurveKey",paths=tpath,time=TimeCode(self.get_keyTime(index+1)),value=self.get_pos(index+1))                        
+                        omni.kit.commands.execute("SetAnimCurveKey",paths=[tpath],time=TimeCode(self.get_keyTime(index)*timefps),value=self.get_pos(index))
+                        omni.kit.commands.execute("SetAnimCurveKey",paths=[tpath],time=TimeCode(self.get_keyTime(index+1)*timefps),value=self.get_pos(index+1))                        
                         # Set Anim Curve Keys for rotateXYZ
-                        omni.kit.commands.execute("SetAnimCurveKey",paths=rpath,time=TimeCode(self.get_keyTime(index)),value=self.get_rot())
-                        omni.kit.commands.execute("SetAnimCurveKey",paths=rpath,time=TimeCode(self.get_keyTime(index+1)),value=self.get_rot())
-            if self._mode == 3:
-                print(f"Mode {self._mode}: Ready for Testing")
+                        omni.kit.commands.execute("SetAnimCurveKey",paths=[rpath],time=TimeCode(self.get_keyTime(index)*timefps),value=self._closestRot(index))
+                        omni.kit.commands.execute("SetAnimCurveKey",paths=[rpath],time=TimeCode(self.get_keyTime(index+1)*timefps),value=self._closestRot(index+1))
+            if self._method == 3:
+                print(f"Method {self._method}: Ready for Testing")
                 camerasList = []
                 fovList = []
                 for index in range(0, self._keys_total):
