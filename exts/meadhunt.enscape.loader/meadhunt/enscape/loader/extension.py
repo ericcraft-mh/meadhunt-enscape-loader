@@ -23,7 +23,7 @@ class EnscapeIO(omni.ext.IExt):
         print("[meadhunt.enscape.loader] Enscape Camera IO startup")
 
         # Note the "Window" part of the path that directs the new menu item to the "Window" menu.
-        self._menu_path = f"Window/{self.WINDOW_TITLE}"
+        self._menu_path = f"Window/Mead & Hunt/{self.WINDOW_TITLE}"
         if self.DEBUG:
             print(f"{self._menu_path}")
         
