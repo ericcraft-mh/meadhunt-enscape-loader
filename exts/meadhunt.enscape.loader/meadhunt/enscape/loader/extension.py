@@ -47,7 +47,7 @@ class EnscapeIO(omni.ext.IExt):
         """Handles showing and hiding the window from the 'Windows' menu."""
         if toggled:
             if self._window is None:
-                self._window = ExtensionWindow(self.WINDOW_TITLE, 300, 300, self._menu_path, self.DEBUG)
+                self._window = ExtensionWindow(self.WINDOW_TITLE, 300, 300, menu, self.DEBUG)
             else:
                 self._window.show()
         else:
