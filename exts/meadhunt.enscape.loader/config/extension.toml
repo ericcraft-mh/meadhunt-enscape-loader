@@ -21,6 +21,7 @@ keywords = ["kit", "enscape"]
 # Use omni.ui to build simple UI
 [dependencies]
 "omni.kit.uiapp" = {}
+"omni.kit.menu.utils" = {}
 "omni.anim.curve" = {}
 "omni.anim.curve_editor" = {}
 
