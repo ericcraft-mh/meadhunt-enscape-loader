@@ -30,8 +30,7 @@ class EnscapeIO(omni.ext.IExt):
         # Menu setup and window initialization
         self._window = None
         self._menu = omni.kit.ui.get_editor_menu().add_item(self._menu_path, self._on_menu_click, True)
-        self._window = ExtensionWindow(self.WINDOW_TITLE, 300, 300, self._menu_path, self.DEBUG)
-        omni.kit.ui.get_editor_menu().set_value(self._menu_path, True)
+        omni.kit.ui.get_editor_menu().set_value(self._menu_path, False)
 
     def on_shutdown(self):
         print("[meadhunt.enscape.loader] Enscape Camera IO shutdown")
