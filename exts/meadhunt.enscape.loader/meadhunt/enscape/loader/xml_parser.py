@@ -68,13 +68,10 @@ class xml_data:
     def total_time(self):
         # try:
         if self._root.attrib.get("durationSeconds"):
-            print("total_time|durationSeconds: ",float(self._root.attrib.get("durationSeconds")))
             outval = float(self._root.attrib.get("durationSeconds"))
         elif self._root[0][self.keys_count()-1].attrib.get("timestampSeconds"):
-            print("total_time|timestamp: ",float(self._root[0][self.keys_count()-1].attrib.get("timestampSeconds")))
             outval = float(self._root[0][self.keys_count()-1].attrib.get("timestampSeconds"))
         else:
-            print("total_time|calculated: ",((float(self._root[0][self.keys_count()-2].attrib.get("timestampSeconds"))/(self.keys_count()-1))+float(self._root[0][self.keys_count()-2].attrib.get("timestampSeconds"))))
             timeval = float(self._root[0][self.keys_count()-2].attrib.get("timestampSeconds"))
             outval = (timeval/(self.keys_count()-1))+timeval
         # except:
