@@ -66,10 +66,20 @@ class xml_data:
             return False
 
     def total_time(self):
-        try:
+        # try:
+        if self._root.attrib.get("durationSeconds"):
+            print("total_time|durationSeconds: ",float(self._root.attrib.get("durationSeconds")))
+            outval = float(self._root.attrib.get("durationSeconds"))
+        elif self._root[0][self.keys_count()-1].attrib.get("timestampSeconds"):
+            print("total_time|timestamp: ",float(self._root[0][self.keys_count()-1].attrib.get("timestampSeconds")))
             outval = float(self._root[0][self.keys_count()-1].attrib.get("timestampSeconds"))
-        except:
-            outval = float(0)
+        else:
+            print("total_time|calculated: ",((float(self._root[0][self.keys_count()-2].attrib.get("timestampSeconds"))/(self.keys_count()-1))+float(self._root[0][self.keys_count()-2].attrib.get("timestampSeconds"))))
+            timeval = float(self._root[0][self.keys_count()-2].attrib.get("timestampSeconds"))
+            outval = (timeval/(self.keys_count()-1))+timeval
+        # except:
+        #     print("ERROR: Total Time not calculated")
+        #     outval = float(0)
         return outval
 
     def time_key(self):
@@ -95,7 +105,10 @@ class xml_data:
     def get_keyTime(self, index=0):
         theKey = self._root[0][index].attrib.get("timestampSeconds")
         if theKey == None:
-            theKey = self.time_key()*index       
+            if index == self.keys_count()-1:
+                theKey = self.total_time()
+            else:
+                theKey = self.time_key()*index       
         theTime = float(theKey)
         theTime = round(theTime)
         return theTime
@@ -241,9 +254,14 @@ class xml_data:
                     # omni.kit.commands.execute("AddAnimCurves",paths=[tpath,rpath])
                     for index in range(0, self._keys_total):
                         # Set Anim Curve Keys for translate
-                        omni.kit.commands.execute("SetAnimCurveKey",paths=[tpath],time=TimeCode(self.get_keyTime(index)*timefps),value=self.get_pos(index),inTangentType="Linear",outTangentType="Linear")
+                        print(index,": ",self.get_keyTime(index))
+                        if index == (self._keys_total-1) and self.get_keyTime(index) == 0:
+                            theTime = self.total_time()
+                        else:
+                            theTime = self.get_keyTime(index)
+                        omni.kit.commands.execute("SetAnimCurveKey",paths=[tpath],time=TimeCode(theTime*timefps),value=self.get_pos(index),inTangentType="Linear",outTangentType="Linear")
                         # Set Anim Curve Keys for rotateXYZ
-                        omni.kit.commands.execute("SetAnimCurveKey",paths=[rpath],time=TimeCode(self.get_keyTime(index)*timefps),value=self._closestRot(index),inTangentType="Linear",outTangentType="Linear")
+                        omni.kit.commands.execute("SetAnimCurveKey",paths=[rpath],time=TimeCode(theTime*timefps),value=self._closestRot(index),inTangentType="Linear",outTangentType="Linear")
             if self._method == 2:
                 print(f"Method {self._method}: Ready for Testing")
                 for index in range(0, self._keys_total-1):
