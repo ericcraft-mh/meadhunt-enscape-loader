@@ -189,7 +189,7 @@ class xml_data:
         stage = omni.usd.get_context().get_stage()
         self._fov = self.get_fov(index)
         # Create Camera Path
-        camera_path = f"{self._scenepath}"+"/"+f"{self._cameraname}{index:0{len(str(self.keys_count()))}d}"
+        camera_path = f"{self._scenepath}/{self._cameraname}{index:0{len(str(self.keys_count()))}d}"
         # Create Camera prim
         camera_prim = stage.DefinePrim(camera_path, "Camera")    
         camera_prim.GetAttribute("horizontalAperture").Set(23.760)
@@ -214,8 +214,8 @@ class xml_data:
         # xposition = xform.AddTranslateOp()            
         # xrotation = xform.AddRotateXYZOp()
         # xscale = xform.AddScaleOp()
-        xposition.Set(self.get_pos())
-        xrotation.Set(self.get_rot())
+        xposition.Set(self.get_pos(index))
+        xrotation.Set(self.get_rot(index))
         xscale.Set(Gf.Vec3d(1,1,1))
         # transform.Set(self.get_xform(index))
         # Debug
