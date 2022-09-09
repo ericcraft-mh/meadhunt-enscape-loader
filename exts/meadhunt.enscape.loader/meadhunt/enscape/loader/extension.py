@@ -14,13 +14,13 @@ class EnscapeIO(omni.ext.IExt):
 
     # Class Variables
     DEBUG = True
-    WINDOW_TITLE = "Enscape Camera IO"
+    WINDOW_TITLE = "Enscape Camera Loader"
 
     def __init__(self):
         pass
 
     def on_startup(self, ext_id):
-        print("[meadhunt.enscape.loader] Enscape Camera IO startup")
+        print("[meadhunt.enscape.loader] Enscape Camera Loader startup")
 
         # Note the "Window" part of the path that directs the new menu item to the "Window" menu.
         self._menu_path = f"Window/Mead & Hunt/{self.WINDOW_TITLE}"
@@ -33,7 +33,7 @@ class EnscapeIO(omni.ext.IExt):
         omni.kit.ui.get_editor_menu().set_value(self._menu_path, False)
 
     def on_shutdown(self):
-        print("[meadhunt.enscape.loader] Enscape Camera IO shutdown")
+        print("[meadhunt.enscape.loader] Enscape Camera Loader shutdown")
 
         if self._window:
             self._window.hide()

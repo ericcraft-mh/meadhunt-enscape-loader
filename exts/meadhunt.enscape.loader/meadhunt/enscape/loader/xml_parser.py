@@ -66,7 +66,6 @@ class xml_data:
             return False
 
     def total_time(self):
-        # try:
         if self._root.attrib.get("durationSeconds"):
             outval = float(self._root.attrib.get("durationSeconds"))
         elif self._root[0][self.keys_count()-1].attrib.get("timestampSeconds"):
@@ -74,9 +73,6 @@ class xml_data:
         else:
             timeval = float(self._root[0][self.keys_count()-2].attrib.get("timestampSeconds"))
             outval = (timeval/(self.keys_count()-1))+timeval
-        # except:
-        #     print("ERROR: Total Time not calculated")
-        #     outval = float(0)
         return outval
 
     def time_key(self):
@@ -204,20 +200,16 @@ class xml_data:
             xscale = camera_prim.GetAttribute("xformOp:scale")
         else:
             xform = UsdGeom.Xformable(camera_prim)
-            # transform = xform.AddTransformOp()
             xposition = xform.AddTranslateOp()
             xrotation = xform.AddRotateXYZOp()
             xscale = xform.AddScaleOp()
         # Set the Camera transform matrix
         xform = UsdGeom.Xformable(camera_prim)
-        # transform = xform.AddTransformOp()
-        # xposition = xform.AddTranslateOp()            
-        # xrotation = xform.AddRotateXYZOp()
-        # xscale = xform.AddScaleOp()
+
         xposition.Set(self.get_pos(index))
         xrotation.Set(self.get_rot(index))
         xscale.Set(Gf.Vec3d(1,1,1))
-        # transform.Set(self.get_xform(index))
+
         # Debug
         if self._debug:
             print(f"Camera Path: {camera_path}")
@@ -248,7 +240,7 @@ class xml_data:
                 if newcam.HasAttribute("xformOp:translate"):
                     tpath = f"{newcampath}.xformOp:translate"
                     rpath = f"{newcampath}.xformOp:rotateXYZ"
-                    # omni.kit.commands.execute("AddAnimCurves",paths=[tpath,rpath])
+
                     for index in range(0, self._keys_total):
                         # Set Anim Curve Keys for translate
                         print(index,": ",self.get_keyTime(index))
@@ -291,5 +283,3 @@ class xml_data:
                         camerasList[index].GetAttribute("focalLength").Set(self.get_focalLength(camerasList[index],fovList[0]))
                     if len(fovList) == 0:
                         camerasList[index].GetAttribute("focalLength").Set(self.get_focalLength(camerasList[index],math.radians(90.0)))
-                # print(camerasList)
-            # print(f"{self._root.tag}")
